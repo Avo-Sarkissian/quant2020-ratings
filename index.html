@@ -1,0 +1,106 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>quant2020 ratings</title>
+<style>
+  :root { --bg:#fff; --fg:#111; --mut:#666; --line:#e2e2e2; --warn:#8a4b00; --warnbg:#fff4e5; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14161a; --fg:#e8e8e8; --mut:#9aa0a6; --line:#2a2e35; --warn:#ffcc8a; --warnbg:#3a2a10; }
+  }
+  body { background:var(--bg); color:var(--fg); margin:0; padding:1.5rem;
+         font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  h1 { font-size:1.1rem; margin:0 0 .25rem; }
+  .meta { color:var(--mut); margin-bottom:1rem; }
+  .stale { background:var(--warnbg); color:var(--warn); padding:.6rem .8rem;
+           border-radius:6px; margin-bottom:1rem; font-weight:600; }
+  input { padding:.4rem .6rem; border:1px solid var(--line); border-radius:6px;
+          background:var(--bg); color:var(--fg); width:16rem; }
+  table { border-collapse:collapse; width:100%; margin-top:1rem; }
+  th, td { text-align:right; padding:.3rem .5rem; border-bottom:1px solid var(--line);
+           white-space:nowrap; }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align:left; }
+  th { cursor:pointer; user-select:none; position:sticky; top:0; background:var(--bg); }
+  td.null { color:var(--mut); }
+  footer { color:var(--mut); margin-top:2rem; font-size:.85rem; }
+</style>
+
+<h1>quant2020 ratings</h1>
+<div class="meta" id="meta">loading…</div>
+<div class="stale" id="stale" hidden></div>
+<input id="q" placeholder="filter by ticker or sector" autocomplete="off">
+<table><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table>
+<footer>
+  Research output of a paper-traded system. <strong>Not investment advice.</strong>
+  Raw data: <a href="./data/latest.json">latest.json</a> ·
+  <a href="./data/latest.csv">latest.csv</a> ·
+  <a href="./data/index.json">history index</a>
+</footer>
+
+<script>
+const COLS = [
+  ["ticker","Ticker"], ["sector","Sector"], ["composite_rank","Rank"],
+  ["composite_z","Composite z"], ["composite_pct","Pct"], ["ai_score","AI"],
+  ["value_rank","Value rank"], ["growth_rank","Growth rank"],
+];
+let ROWS = [], sortKey = "composite_rank", sortAsc = true;
+
+function weekdaysBetween(a, b) {
+  let n = 0;
+  for (const d = new Date(a); d < b; d.setUTCDate(d.getUTCDate() + 1)) {
+    const day = d.getUTCDay();
+    if (day !== 0 && day !== 6) n++;
+  }
+  return n;
+}
+
+function render() {
+  const q = document.getElementById("q").value.trim().toUpperCase();
+  const shown = ROWS.filter(r =>
+    !q || (r.ticker || "").includes(q) || (r.sector || "").toUpperCase().includes(q));
+  shown.sort((x, y) => {
+    const a = x[sortKey], b = y[sortKey];
+    if ((a === null || a === undefined) && (b === null || b === undefined)) return 0;
+    if (a === null || a === undefined) return 1;   // nulls always last, both directions
+    if (b === null || b === undefined) return -1;
+    return (a < b ? -1 : a > b ? 1 : 0) * (sortAsc ? 1 : -1);
+  });
+  document.getElementById("rows").innerHTML = shown.map(r =>
+    "<tr>" + COLS.map(([k]) => {
+      const v = r[k];
+      return v === null || v === undefined
+        ? '<td class="null">–</td>' : "<td>" + v + "</td>";
+    }).join("") + "</tr>").join("");
+}
+
+fetch("./data/latest.json").then(r => r.json()).then(doc => {
+  ROWS = doc.ratings;
+  const c = doc.counts;
+  document.getElementById("meta").textContent =
+    `as of ${doc.as_of} · ${c.tickers} tickers · ${c.with_composite} scored · ` +
+    `${c.with_ai_score} AI-rated · generated ${doc.generated_at}`;
+
+  // Staleness is the point, not a nicety: if the producing machine is down, latest.json
+  // keeps serving the last good day. A reader must never be shown old numbers as new.
+  const behind = weekdaysBetween(new Date(doc.as_of + "T00:00:00Z"), new Date());
+  if (behind > 2) {
+    const el = document.getElementById("stale");
+    el.textContent =
+      `This data is stale — the last run was ${doc.as_of}, ${behind} weekdays ago.`;
+    el.hidden = false;
+  }
+
+  document.getElementById("head").innerHTML =
+    COLS.map(([k, label]) => `<th data-k="${k}">${label}</th>`).join("");
+  document.querySelectorAll("th").forEach(th => th.onclick = () => {
+    const k = th.dataset.k;
+    sortAsc = k === sortKey ? !sortAsc : true;
+    sortKey = k;
+    render();
+  });
+  document.getElementById("q").oninput = render;
+  render();
+}).catch(e => {
+  document.getElementById("meta").textContent = "could not load ratings: " + e;
+});
+</script>
