@@ -4,32 +4,74 @@
 <meta name="robots" content="noindex,nofollow">
 <title>quant2020 ratings</title>
 <style>
-  :root { --bg:#fff; --fg:#111; --mut:#666; --line:#e2e2e2; --warn:#8a4b00; --warnbg:#fff4e5; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#14161a; --fg:#e8e8e8; --mut:#9aa0a6; --line:#2a2e35; --warn:#ffcc8a; --warnbg:#3a2a10; }
+  /* No webfont link on purpose: this page is public, and a font CDN would make every
+     visitor's browser call a third party. test_the_page_makes_no_external_request pins
+     that. IBM Plex is used when the reader already has it; otherwise the system stack
+     carries it and the palette does the identifying.
+     Quant 2020 dark-terminal palette — the console's own tokens
+     (console/frontend/src/index.css @theme), so the public feed reads as the
+     same instrument rather than a separate product. Single-theme on purpose:
+     the console commits to dark, and a light variant here would look foreign. */
+  :root {
+    --bg:#080B10; --bg-2:#0D131B; --bg-3:#10171F;
+    --text:#E6ECF2; --body:#C2CDD8; --muted:#6E7B89; --label:#5E6B79;
+    --orange:#E8743B; --green:#3FC396; --red:#F08079;
+    --border:#1A232E; --row:#161E27;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
   }
-  body { background:var(--bg); color:var(--fg); margin:0; padding:1.5rem;
-         font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-  h1 { font-size:1.1rem; margin:0 0 .25rem; }
-  .meta { color:var(--mut); margin-bottom:1rem; }
-  .stale { background:var(--warnbg); color:var(--warn); padding:.6rem .8rem;
-           border-radius:6px; margin-bottom:1rem; font-weight:600; }
-  input { padding:.4rem .6rem; border:1px solid var(--line); border-radius:6px;
-          background:var(--bg); color:var(--fg); width:16rem; }
-  table { border-collapse:collapse; width:100%; margin-top:1rem; }
-  th, td { text-align:right; padding:.3rem .5rem; border-bottom:1px solid var(--line);
-           white-space:nowrap; }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--body); margin:0;
+         padding:1.75rem clamp(1rem,3vw,2.25rem) 3rem;
+         font:14px/1.55 var(--sans); -webkit-font-smoothing:antialiased; }
+  .label { font:600 10px/1 var(--sans); letter-spacing:.16em; text-transform:uppercase;
+           color:var(--label); display:block; margin-bottom:.55rem; }
+  h1 { font:600 1.15rem/1.2 var(--sans); color:var(--text); margin:0 0 .3rem;
+       letter-spacing:-.01em; }
+  .meta { color:var(--muted); font-family:var(--mono); font-size:11.5px;
+          letter-spacing:.01em; margin-bottom:1.25rem; }
+  .stale { background:#22160C; color:var(--orange); border:1px solid #3A2413;
+           border-left:2px solid var(--orange); padding:.6rem .85rem;
+           margin-bottom:1.1rem; font-weight:600; font-size:12.5px; }
+  .bar { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; margin-bottom:.9rem; }
+  input { padding:.42rem .65rem; border:1px solid var(--border); background:var(--bg-2);
+          color:var(--text); width:18rem; font:12px var(--mono); border-radius:2px; }
+  input::placeholder { color:var(--label); }
+  input:focus { outline:none; border-color:var(--orange); }
+  .hint { color:var(--label); font-size:11px; font-family:var(--mono); }
+  .panel { border:1px solid var(--border); background:var(--bg-2);
+           border-radius:2px; overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; font-family:var(--mono);
+          font-size:12px; font-variant-numeric:tabular-nums; }
+  th, td { text-align:right; padding:.42rem .7rem; white-space:nowrap;
+           border-bottom:1px solid var(--border); }
   th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align:left; }
-  th { cursor:pointer; user-select:none; position:sticky; top:0; background:var(--bg); }
-  td.null { color:var(--mut); }
-  footer { color:var(--mut); margin-top:2rem; font-size:.85rem; }
+  th { cursor:pointer; user-select:none; position:sticky; top:0; background:var(--bg-3);
+       color:var(--label); font:600 10px/1.6 var(--sans); letter-spacing:.11em;
+       text-transform:uppercase; border-bottom:1px solid var(--border); }
+  th:hover { color:var(--orange); }
+  tbody tr:hover { background:var(--row); }
+  tbody td:first-child { color:var(--text); font-weight:500; }
+  td.null { color:var(--label); }
+  footer { color:var(--muted); margin-top:1.75rem; font-size:11.5px;
+           border-top:1px solid var(--border); padding-top:.9rem; }
+  footer strong { color:var(--red); }
+  a { color:var(--orange); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  :focus-visible { outline:1px solid var(--orange); outline-offset:2px; }
 </style>
 
+<span class="label">Quant 2020 · research output</span>
 <h1>quant2020 ratings</h1>
 <div class="meta" id="meta">loading…</div>
 <div class="stale" id="stale" hidden></div>
-<input id="q" placeholder="filter by ticker or sector" autocomplete="off">
-<table><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table>
+<div class="bar">
+  <input id="q" placeholder="filter by ticker or sector" autocomplete="off">
+  <span class="hint">click any column to sort</span>
+</div>
+<div class="panel">
+  <table><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table>
+</div>
 <footer>
   Research output of a paper-traded system. <strong>Not investment advice.</strong>
   Raw data: <a href="./data/latest.json">latest.json</a> ·
